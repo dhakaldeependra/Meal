@@ -16,36 +16,72 @@ struct MealDetailView: View {
     
     init(mealID: String) {
         self.mealID = mealID
-        UILabel.appearance(whenContainedInInstancesOf: [UINavigationBar.self]).adjustsFontSizeToFitWidth = true
     }
     
     var body: some View {
-        ZStack {
+        ScrollView(.vertical, showsIndicators: false) {
             if let meal = viewModel.meal {
-                List{
+                // Header
+                VStack(alignment: .center, spacing: 20) {
                     AsyncImage(url: URL(string: (meal.strMealThumb!))!, content: { image in
                         image.resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .cornerRadius(12)
                     }, placeholder: {
                         ProgressView()
                     })
-                    .frame(height: 300)
-                    .padding(.vertical, 35)
+                    .scaledToFit()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(height: 350)
+                }
+                
+                VStack(alignment: .leading, spacing: 20) {
+                    // Title
+                    Text(meal.strMeal ?? "")
+                        .font(.largeTitle)
+                        .fontWeight(.heavy)
+                        .padding(.top, 20)
                     
-                    Text("Ingredients")
-                        .font(.title)
+                    //Expandable ingredient view
+                    MealIngredientsView(ingredients: meal.getIngredientsWithMeasurement)
+                    
+                    //Subtitle
+                    Text("Instructions".uppercased())
                         .fontWeight(.bold)
                     
-                    ForEach(meal.getIngredientsWithMeasurement.sorted(by: >), id: \.key) { key, value in
-                        IngredientsItemView(ingredient: key, measurement: value)
+                    
+                    // Instructions
+                    Text(meal.strInstructions ?? "")
+                        .multilineTextAlignment(.leading)
+                    
+                    
+                    
+                    //Youtube View
+                    if let youtubeLink = meal.strYoutube?.extractYoutubeID() , !youtubeLink.isEmpty{
+                        
+                        Text("Watch on Youtube".uppercased())
+                            .fontWeight(.bold)
+                        
+                        
+                        YoutubeView(videoID: youtubeLink)
+                            .frame(height: 200)
+                            .cornerRadius(12)
                     }
-                }.navigationBarTitle(meal.strMeal ?? "")
+                    
+                    // Source View
+                    if let sourceLink = meal.strSource, !sourceLink.isEmpty {
+                        SourceLinkView(sourceLink: sourceLink)
+                    }
+                    
+                }//: VStack
+                .padding(20)
+                .frame(maxWidth: 640, alignment: .center)
                 
             }else {
                 ProgressView()
             }
-        }
+            
+        }//: Scroll
+        .edgesIgnoringSafeArea(.top)
+        .navigationViewStyle(.stack)
         .onAppear{
             self.viewModel.getMeal(with: mealID)
         }
